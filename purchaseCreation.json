@@ -1,0 +1,42 @@
+{
+  "eventType": "PurchaseOrderCreated",
+  "eventId": "123e4567-e89b-12d3-a456-426614174000",
+  "timestamp": "2023-10-01T12:00:00Z",
+  "data": {
+    "orderId": "PO-1001",
+    "customerId": "CUST-2001",
+    "items": [
+      {
+        "itemId": "ITEM-3001",
+        "name": "Laptop",
+        "quantity": 1,
+        "price": 1200.00
+      },
+      {
+        "itemId": "ITEM-3002",
+        "name": "Mouse",
+        "quantity": 2,
+        "price": 25.00
+      }
+    ],
+    "totalAmount": 1250.00,
+    "shippingAddress": {
+      "street": "123 Main St",
+      "city": "Metropolis",
+      "state": "NY",
+      "zipCode": "10001",
+      "country": "USA"
+    },
+    "billingAddress": {
+      "street": "123 Main St",
+      "city": "Metropolis",
+      "state": "NY",
+      "zipCode": "10001",
+      "country": "USA"
+    },
+    "metadata": {
+      "notes": "Deliver between 9 AM and 5 PM",
+      "tags": ["electronics", "priority"]
+    }
+  }
+}

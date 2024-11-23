@@ -1,0 +1,63 @@
+{
+  "eventType": "CustomerCreated",
+  "eventId": "123e4567-e89b-12d3-a456-426614174001",
+  "timestamp": "2023-10-01T12:00:00Z",
+  "data": {
+    "customerId": "CUST-2002",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1-555-123-4567",
+    "address": {
+      "street": "456 Elm St",
+      "city": "Gotham",
+      "state": "CA",
+      "zipCode": "90210",
+      "country": "USA"
+    },
+    "preferences": {
+      "newsletter": true,
+      "smsNotifications": false,
+      "preferredLanguage": "en-US"
+    },
+    "metadata": {
+      "notes": "VIP customer",
+      "tags": ["loyal", "high-value"]
+    },
+    "purchaseHistory": [
+      {
+        "orderId": "PO-1002",
+        "date": "2023-09-15",
+        "amount": 500.00,
+        "items": [
+          {
+            "itemId": "ITEM-3003",
+            "name": "Smartphone",
+            "quantity": 1,
+            "price": 500.00
+          }
+        ]
+      },
+      {
+        "orderId": "PO-1003",
+        "date": "2023-09-20",
+        "amount": 150.00,
+        "items": [
+          {
+            "itemId": "ITEM-3004",
+            "name": "Headphones",
+            "quantity": 1,
+            "price": 150.00
+          }
+        ]
+      }
+    ],
+    "additionalData": {
+      "customField1": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "customField2": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "customField3": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "customField4": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+      "customField5": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    }
+  }
+}
