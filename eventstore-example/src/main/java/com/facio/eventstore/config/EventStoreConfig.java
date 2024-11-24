@@ -1,4 +1,4 @@
-package com.example.eventstore.config;
+package com.facio.eventstore.config;
 
 import com.eventstore.dbclient.EventStoreDBClient;
 import com.eventstore.dbclient.EventStoreDBConnectionString;

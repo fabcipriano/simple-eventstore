@@ -1,4 +1,4 @@
-package com.example.eventstore;
+package com.facio.eventstore;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
