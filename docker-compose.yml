@@ -13,6 +13,7 @@ services:
       - EVENTSTORE_INSECURE=true
       - EVENTSTORE_ENABLE_EXTERNAL_TCP=true
       - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+      - EVENTSTORE_UNSAFE_IGNORE_HARD_DELETE=true
     ports:
       - "2113:2113" # HTTP port
       - "1113:1113" # TCP port

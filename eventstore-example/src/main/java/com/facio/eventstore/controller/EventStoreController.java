@@ -1,6 +1,16 @@
 package com.facio.eventstore.controller;
 
-import com.eventstore.dbclient.*;
+import com.eventstore.dbclient.AppendToStreamOptions;
+import com.eventstore.dbclient.DeleteResult;
+import com.eventstore.dbclient.DeleteStreamOptions;
+import com.eventstore.dbclient.EventData;
+import com.eventstore.dbclient.EventStoreDBClient;
+import com.eventstore.dbclient.ExpectedRevision;
+import com.eventstore.dbclient.ReadResult;
+import com.eventstore.dbclient.ReadStreamOptions;
+import com.eventstore.dbclient.RecordedEvent;
+import com.eventstore.dbclient.ResolvedEvent;
+import com.eventstore.dbclient.StreamNotFoundException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -11,13 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -61,7 +70,7 @@ public class EventStoreController {
             logger.info("Writing event to stream: {}", streamName);
 
             // Write the event to EventStore
-            eventStoreClient.appendToStream(streamName, AppendToStreamOptions.get().expectedRevision(ExpectedRevision.ANY), eventData).get();
+            eventStoreClient.appendToStream(streamName, AppendToStreamOptions.get().expectedRevision(ExpectedRevision.any()), eventData).get();
 
             logger.info("Event written successfully to stream: {}", streamName);
             return ResponseEntity.ok("Event written successfully to stream: " + streamName);
@@ -76,25 +85,38 @@ public class EventStoreController {
         List<String> streamNames = new ArrayList<>();
         try {
             logger.info("Reading from $streams system stream...");
-
+    
             // Read events from the $streams system stream
             ReadStreamOptions options = ReadStreamOptions.get()
                     .forwards()
                     .fromStart();
-
+    
             ReadResult result = eventStoreClient.readStream("$streams", options).get();
-
+    
             // Extract stream names from the events
-            result.getEvents().forEach(resolvedEvent -> {
+            for (ResolvedEvent resolvedEvent : result.getEvents()) {
                 RecordedEvent recordedEvent = resolvedEvent.getOriginalEvent();
                 String streamName = new String(recordedEvent.getEventData()); // Convert byte array to string
-                logger.info("Found stream: {}", streamName);
                 String realStreamName = streamName.replace("0@", "");
-                logger.info("Found the realStreamName: {}", realStreamName);
-                streamNames.add(realStreamName);
-            });
 
-            logger.info("Successfully fetched {} streams.", streamNames.size());
+                // Check if the stream exists by attempting to read from it
+                try {
+                    ReadStreamOptions streamOptions = ReadStreamOptions.get()
+                            .forwards()
+                            .fromStart();
+                    eventStoreClient.readStream(realStreamName, streamOptions).get();
+                    logger.info("Found active stream: {}", realStreamName);
+                    streamNames.add(realStreamName);
+                } catch (ExecutionException e) {
+                    if (e.getCause() instanceof StreamNotFoundException) {
+                        logger.info("Stream {} is deleted or does not exist, skipping.", realStreamName);
+                    } else {
+                        logger.warn("Failed to read stream {}, assuming it is active.", realStreamName, e);
+                    }
+                }
+            }
+    
+            logger.info("Successfully fetched {} active streams.", streamNames.size());
             return ResponseEntity.ok(streamNames);
         } catch (ExecutionException | InterruptedException e) {
             logger.error("Failed to list streams", e);
@@ -139,7 +161,11 @@ public class EventStoreController {
             // Delete the first half of the streams
             for (String streamName : streamsToDelete) {
                 logger.info("Deleting stream: {}", streamName);
-                eventStoreClient.deleteStream(streamName, DeleteStreamOptions.get().hardDelete()).get();
+                //soft DElete
+                //eventStoreClient.deleteStream(streamName, DeleteStreamOptions.get()).get();
+
+                //Hard Delete
+                eventStoreClient.tombstoneStream(streamName, DeleteStreamOptions.get());
             }
     
             logger.info("Successfully deleted {} streams.", streamsToDelete.size());
@@ -149,19 +175,4 @@ public class EventStoreController {
             return ResponseEntity.status(500).body("Failed to delete streams: " + e.getMessage());
         }
     }
-
-    @GetMapping("/streams/delete-test")
-    public ResponseEntity<String> deleteStreamDoesNotExist() {
-        try {
-            logger.info("Deleting stream TEST");
-    
-            logger.info("Deleting stream: 0purchase-order-quenaoexisteok");
-            eventStoreClient.deleteStream("0purchase-order-quenaoexisteok", DeleteStreamOptions.get().hardDelete()).get();
-    
-            return ResponseEntity.ok("Successfully deleted 0purchase-order-quenaoexisteok streams.");
-        } catch (Exception e) {
-            logger.error("Failed to delete streams", e);
-            return ResponseEntity.status(500).body("Failed to delete streams: " + e.getMessage());
-        }
-    }    
 }
