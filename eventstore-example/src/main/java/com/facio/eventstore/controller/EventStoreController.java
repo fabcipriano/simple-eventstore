@@ -136,16 +136,29 @@ public class EventStoreController {
     
             ReadResult result = eventStoreClient.readStream("$streams", options).get();
     
-            // Extract stream names from the events
             List<String> streamNames = new ArrayList<>();
-            result.getEvents().forEach(resolvedEvent -> {
+            // Extract stream names from the events
+            for (ResolvedEvent resolvedEvent : result.getEvents()) {
                 RecordedEvent recordedEvent = resolvedEvent.getOriginalEvent();
                 String streamName = new String(recordedEvent.getEventData()); // Convert byte array to string
-                logger.info("Found stream: {}", streamName);
                 String realStreamName = streamName.replace("0@", "");
-                logger.info("Found the realStreamName: {}", realStreamName);
-                streamNames.add(realStreamName);
-            });
+
+                // Check if the stream exists by attempting to read from it
+                try {
+                    ReadStreamOptions streamOptions = ReadStreamOptions.get()
+                            .forwards()
+                            .fromStart();
+                    eventStoreClient.readStream(realStreamName, streamOptions).get();
+                    logger.info("Found active stream: {}", realStreamName);
+                    streamNames.add(realStreamName);
+                } catch (ExecutionException e) {
+                    if (e.getCause() instanceof StreamNotFoundException) {
+                        logger.info("Stream {} is deleted or does not exist, skipping.", realStreamName);
+                    } else {
+                        logger.warn("Failed to read stream {}, assuming it is active.", realStreamName, e);
+                    }
+                }
+            }
     
             if (streamNames.isEmpty()) {
                 logger.info("No streams found.");
