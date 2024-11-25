@@ -188,4 +188,75 @@ public class EventStoreController {
             return ResponseEntity.status(500).body("Failed to delete streams: " + e.getMessage());
         }
     }
+
+    @GetMapping("/streams/delete-old")
+    public ResponseEntity<String> deleteOldStreams() {
+        try {
+            logger.info("Reading from $streams system stream...");
+    
+            // Read events from the $streams system stream
+            ReadStreamOptions options = ReadStreamOptions.get()
+                    .forwards()
+                    .fromStart();
+    
+            ReadResult result = eventStoreClient.readStream("$streams", options).get();
+    
+            List<String> streamsToDelete = new ArrayList<>();
+            Instant twelveHoursAgo = Instant.now().minusSeconds(12 * 60 * 60); // 12 hours ago
+    
+            // Extract stream names from the events
+            for (ResolvedEvent resolvedEvent : result.getEvents()) {
+                RecordedEvent recordedEvent = resolvedEvent.getOriginalEvent();
+                String streamName = new String(recordedEvent.getEventData()); // Convert byte array to string
+                String realStreamName = streamName.replace("0@", "");
+    
+                // Check if the stream exists and is older than 12 hours
+                try {
+                    ReadStreamOptions streamOptions = ReadStreamOptions.get()
+                            .forwards()
+                            .fromStart();
+                    ReadResult streamResult = eventStoreClient.readStream(realStreamName, streamOptions).get();
+    
+                    // Check the creation time of the first event in the stream
+                    if (!streamResult.getEvents().isEmpty()) {
+                        ResolvedEvent firstEvent = streamResult.getEvents().get(0);
+                        Instant streamCreationTime = firstEvent.getOriginalEvent().getCreated();
+    
+                        if (streamCreationTime.isBefore(twelveHoursAgo)) {
+                            logger.info("Stream {} is older than 12 hours, marking for deletion.", realStreamName);
+                            streamsToDelete.add(realStreamName);
+                        } else {
+                            logger.info("Stream {} is not older than 12 hours, skipping.", realStreamName);
+                        }
+                    }
+                } catch (ExecutionException e) {
+                    if (e.getCause() instanceof StreamNotFoundException) {
+                        logger.info("Stream {} is deleted or does not exist, skipping.", realStreamName);
+                    } else {
+                        logger.warn("Failed to read stream {}, assuming it is active.", realStreamName, e);
+                    }
+                }
+            }
+    
+            if (streamsToDelete.isEmpty()) {
+                logger.info("No streams older than 12 hours found.");
+                return ResponseEntity.ok("No streams to delete.");
+            }
+    
+            logger.info("Deleting {} streams...", streamsToDelete.size());
+    
+            // Delete the streams older than 12 hours
+            for (String streamName : streamsToDelete) {
+                logger.info("Deleting stream: {}", streamName);
+                // Hard delete the stream
+                eventStoreClient.tombstoneStream(streamName, DeleteStreamOptions.get()).get();
+            }
+    
+            logger.info("Successfully deleted {} streams.", streamsToDelete.size());
+            return ResponseEntity.ok("Successfully deleted " + streamsToDelete.size() + " streams.");
+        } catch (Exception e) {
+            logger.error("Failed to delete streams", e);
+            return ResponseEntity.status(500).body("Failed to delete streams: " + e.getMessage());
+        }
+    }    
 }

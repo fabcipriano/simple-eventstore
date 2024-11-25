@@ -4,6 +4,9 @@
 = 129041
 - 64520
 = 64521
+= 129521
+- 64521
+= 65000
 
 eventstore    | [    1,38,14:17:00.616,INF] SCAVENGING: Removing hard deleted stream tombstone for stream "payments-order-cbf1e244-5310-4a0f-a9b9-3a1158ac1395" at position 34995802676
 eventstore    | [    1,38,14:17:00.617,INF] SCAVENGING: Removing hard deleted stream tombstone for stream "payments-order-b763c2aa-3422-4e49-a12e-aabf64d1a4bd" at position 34995803472
